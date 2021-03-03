@@ -11,7 +11,8 @@ import zipfile
 # 1. clean_cache: takes no arguments and creates an empty folder named cache
 # in the current directory. If it already exists, it deletes everything in the
 # cache folder.
-def clean_cache(dir='cache'):
+def clean_cache():
+    dir = (os.getcwd()+'\\cache')
     if os.path.exists(dir):
         for root, dirs, files in os.walk(dir):
             for name in files:
@@ -29,12 +30,23 @@ def clean_cache(dir='cache'):
 # arguments, in that order. The function then unpacks the indicated zip file
 # into a clean cache folder. You can test this with data.zip file.
 def cache_zip(zip_dir_file: str, cache_dir: str):
-    if os.path.exists(zip_dir_file):
-        clean_cache(cache_dir)
-        with zipfile.ZipFile(zip_dir_file, 'r') as zip_ref:  # reading the file
+    # @David: in de opdracht wordt aangegeven "argument cache dir path
+    # meegeven". Hierdoor wordt de locatie van cache dir variabel.
+    # Daarna wordt verwacht "into a clean cache folder".
+    # Helaas wordt bij opdracht 1 aangegeven dat er geen argument meegegeven
+    # mag worden. Hierdoor wordt het onmogelijk de eerste functie te integreren
+    # in deze functie. Ik ga er nu dan ook vanuit dat de "clean cache folder"
+    # al is (schoon) gemaakt via een andere, losstaande actie
+
+    # unable to define as default in args for combi input+<ENTER>
+    if cache_dir == '':
+        cache_dir = os.getcwd() + '\\cache'
+
+    try:
+        with zipfile.ZipFile(zip_dir_file, 'r') as zip_ref:  # reading file
             zip_ref.extractall(cache_dir)  # unpacking the zip-file
-    else:
-        print(f'Failed finding directory {zip_dir_file}')
+    except OSError:
+        print('Failed unpacking the zip-file')
 
 
 # 3. cached_files: takes no arguments and returns a list of all the files in
@@ -43,7 +55,8 @@ def cache_zip(zip_dir_file: str, cache_dir: str):
 # not have to account for files within folders within the cache directory.
 def cached_files():
     file_list = []
-    for root, dirs, files in os.walk(os.path.abspath(os.curdir+'\\cache')):
+    for root, dirs, files in os.walk(os.getcwd()+'\\cache'):
+        print('Voor David: root = ', root)  # @David speciaal voor jou
         for name in files:
             if root[-6:] == '\\cache':  # exclude files in subfolders
                 file_list.append(os.path.join(root, name))
@@ -55,13 +68,23 @@ def cached_files():
 # password is in there. Surely there should be a word in there to incidicate
 # the presence of the password? Once found, find_password should return this
 # password string.
-def find_password(file_list=(cached_files())):
+
+# cached_files() not default arg because then run at init -> empty list
+# @David: Als jij dit in documentatie terug kunt vinden hoor ik graag waar...
+def find_password(file_list):
     for cached_file in file_list:
         with open(cached_file) as f:
             lines = f.readlines()
         for line in lines:
             if 'password:' in line:
-                return line.replace('password:','').strip()
-                break
+                return line.replace('password:', '').strip()
             else:
                 continue
+
+
+if __name__ == "__main__":
+    clean_cache()
+    cache_zip(
+        zip_dir_file=input('Geef pad en filenaam van uw zip-file:\n'),
+        cache_dir=(input('Geef pad voor uw cache dir (<ENTER> voor hier):\n')))
+    print('password : '+str(find_password(cached_files())))
